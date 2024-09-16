@@ -1,0 +1,49 @@
+[tempo] # Tempo deve ser o valor em segundos
+tempo1 = 30
+tempo2 = 60
+tempo3 = 75
+tempo4 = 120
+tempo5 = 1200
+tempo6 = 0
+tempo7 = 120
+tempo8 = 1200
+tempo9 = 0
+tempo_reset = 14
+
+[tempo_texto] # Texto a ser mostrado nos botoes
+tempo_texto1 = "00:30"
+tempo_texto2 = "01:00"
+tempo_texto3 = "01:15"
+tempo_texto4 = "02:00"
+tempo_texto5 = "20:00"
+tempo_texto6 = "00:00"
+tempo_texto7 = "02:00"
+tempo_texto8 = "20:00"
+tempo_texto9 = "00:00"
+
+[creditos]
+credito_texto = "Regressiva eleições TV TEM - Gabriel Oliveira"
+mostrar_creditos = true
+
+
+[botoes] # controle de visibilidade e funcionalidade dos botoes
+botao_iniciar = true
+botao_pausar = true
+botao_reset = true
+
+
+[debug] # Debug para mostrar informacoes no terminal e no programa
+mostrar_qps = false
+mostrar_timer = false
+
+[fontes] # Fontes para o programa
+fonte = "GlobotipoVariable-VF.ttf"
+fonte_gigante = 256
+fonte_media = 22
+fonte_grande = 44
+fonte_pequena = 36
+
+[boas_vindas]
+mostrar_boas_vindas = true
+
+
