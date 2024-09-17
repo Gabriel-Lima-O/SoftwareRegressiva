@@ -150,6 +150,8 @@ fn handle_mouse_click(
     } else if buttons.reset_button.contains_point((x, y)) && config.botoes.botao_reset {
         *is_running = false;
         *countdown_duration = Duration::new(config.tempo.tempo_reset, 0);
+    } else if buttons.close_button.contains_point((x, y)) {
+        std::process::exit(0);
     } else {
         let button_durations = [
             (buttons.botao_1, config.tempo.tempo1),
@@ -216,6 +218,7 @@ struct ButtonPositions {
     start_button: Rect,
     pause_button: Rect,
     reset_button: Rect,
+    close_button: Rect,
     botao_1: Rect,
     botao_2: Rect,
     botao_3: Rect,
@@ -386,6 +389,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             to_u32(100.0 * 3.2),
             to_u32(50.0 * 1.44),
         ),
+        close_button: Rect::new(1230, 10, 40, 40),
         botao_1: Rect::new(
             to_u32(50.0 * 3.2) as i32,
             to_u32(120.0 * 1.44) as i32,
@@ -542,10 +546,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let seconds = remaining_secs % 60;
 
         // Define a cor do timer
-        let timer_color = if remaining_secs <= 10 && seconds % 2 != 1 {
-            Color::RED
-        } else if remaining_secs == 0 {
-            Color::RED
+        let timer_color = if remaining_secs <= 10 && remaining_secs > 0 {
+            if seconds % 2 == 0 {
+                Color::RED
+            } else {
+                Color::WHITE
+            }
         } else {
             Color::WHITE
         };
@@ -614,6 +620,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 buttons.reset_button,
             );
         }
+
+        // Renderiza o botão de fechar
+        canvas_buttons.set_draw_color(Color::RGB(9, 61, 83));
+        canvas_buttons.fill_rect(buttons.close_button)?;
+        render_text(
+            &mut canvas_buttons,
+            &fonte_large,
+            "X",
+            Color::WHITE,
+            buttons.close_button,
+        );
 
         // Renderiza os botões de tempo
         let button_texts = [
