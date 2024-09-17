@@ -194,11 +194,9 @@ fn handle_text_input(
 
 // Função para lidar com a tecla de backspace
 fn handle_backspace(input_text: &mut String) {
-    if !input_text.is_empty() {
+    input_text.pop();
+    if input_text.len() == 2 && input_text.contains(':') {
         input_text.pop();
-        if input_text.len() == 2 && input_text.contains(':') {
-            input_text.pop();
-        }
     }
 }
 
@@ -271,6 +269,28 @@ fn boas_vindas() {
     println!("{}", greeting);
 }
 
+fn to_u32(value: f64) -> u32 {
+    value.round() as u32
+}
+
+fn update_countdown(
+    start_time: &mut Instant,
+    countdown_duration: &mut Duration,
+    is_running: &mut bool,
+) {
+    if *is_running {
+        let elapsed = start_time.elapsed();
+            if *countdown_duration > elapsed {
+                *countdown_duration -= elapsed;
+            } else {
+                *countdown_duration = Duration::new(0, 0);
+                *is_running = false;
+            }
+        } 
+        *start_time = Instant::now();
+    }
+
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Carrega a configuração do arquivo TOML
     let config_str = fs::read_to_string("Config.toml")?;
@@ -339,16 +359,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut countdown_duration = Duration::new(30, 0);
     let mut is_running = false;
     let mut input_text = String::new();
-    let placeholder_text = "00:00".to_string();
+    let placeholder_text = "Clique para editar".to_string();
 
     // Variáveis para cálculo de FPS
     let mut last_fps_update = Instant::now();
     let mut frame_count = 0;
     let mut fps = 0.0;
-
-    fn to_u32(value: f64) -> u32 {
-        value.round() as u32
-    }
 
     // Define as posições dos botões
     let buttons = ButtonPositions {
@@ -440,44 +456,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         to_u32(50.0 * 1.44),
     );
 
-    let is_countdown = true;
 
     let mut event_pump = sdl_context.event_pump()?;
 
-    // Função para atualizar a contagem regressiva
-    fn update_countdown(
-        start_time: &mut Instant,
-        countdown_duration: &mut Duration,
-        is_running: &mut bool,
-        is_countdown: bool,
-    ) {
-        if *is_running {
-            let elapsed = start_time.elapsed();
-            if is_countdown {
-                if *countdown_duration > elapsed {
-                    *countdown_duration -= elapsed;
-                } else {
-                    *countdown_duration = Duration::new(0, 0);
-                    *is_running = false;
-                }
-            } else {
-                *countdown_duration += elapsed;
-            }
-            *start_time = Instant::now();
-        }
-    }
+    // Variáveis adicionadas antes do loop
+    let mut cursor_visible = true;
+    let cursor_toggle_duration = Duration::from_millis(500);
+    let mut last_cursor_toggle = Instant::now();
+    let mut is_input_focused = false;
 
     // Loop principal
     'running: loop {
         let mouse_state = event_pump.mouse_state();
+        let now = Instant::now();
 
         // Processa eventos
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. } => break 'running,
-                Event::MouseButtonDown {
-                    x, y, mouse_btn, ..
-                } => {
+                Event::MouseButtonDown { x, y, mouse_btn, .. } => {
                     if mouse_btn == MouseButton::Left {
                         handle_mouse_click(
                             x,
@@ -488,16 +485,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             &mut countdown_duration,
                             &mut start_time,
                         );
+
+                        // Verifica se o clique foi dentro da área de entrada de texto
+                        if input_rect.contains_point((x, y)) {
+                            is_input_focused = true;
+                        } else {
+                            is_input_focused = false;
+                        }
                     }
                 }
                 Event::TextInput { text, .. } => {
-                    handle_text_input(text, &mut input_text, &mouse_state, input_rect);
+                    if is_input_focused {
+                        handle_text_input(text, &mut input_text, &mouse_state, input_rect);
+                    }
                 }
                 Event::KeyDown {
                     keycode: Some(Keycode::Backspace),
                     ..
                 } => {
-                    handle_backspace(&mut input_text);
+                    if is_input_focused {
+                        handle_backspace(&mut input_text);
+                    }
                 }
                 Event::KeyDown {
                     keycode: Some(Keycode::Return),
@@ -507,10 +515,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     keycode: Some(Keycode::KP_ENTER),
                     ..
                 } => {
-                    handle_enter(&mut input_text, &mut is_running, &mut countdown_duration);
+                    if is_input_focused {
+                        handle_enter(&mut input_text, &mut is_running, &mut countdown_duration);
+                    }
                 }
                 _ => {}
             }
+        }
+
+        // Atualiza a visibilidade do cursor apenas se o campo de entrada estiver focado
+        if is_input_focused && now.duration_since(last_cursor_toggle) >= cursor_toggle_duration {
+            cursor_visible = !cursor_visible;
+            last_cursor_toggle = now;
         }
 
         // Atualiza a contagem regressiva
@@ -518,7 +534,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &mut start_time,
             &mut countdown_duration,
             &mut is_running,
-            is_countdown,
         );
 
         // Calcula o tempo restante
@@ -625,8 +640,41 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
         }
 
-        // Renderiza a área de entrada de texto
-        if input_text.is_empty() {
+        // Renderiza a área de entrada de texto com o cursor
+        if is_input_focused {
+            if cursor_visible {
+                if input_text.is_empty() {
+                    // Renderiza apenas o cursor
+                    render_text(
+                        &mut canvas_buttons,
+                        &font_small,
+                        "|",
+                        Color::WHITE,
+                        input_rect,
+                    );
+                } else {
+                    // Renderiza o texto com o cursor
+                    let display_text = format!("{}|", input_text);
+                    render_text(
+                        &mut canvas_buttons,
+                        &font_small,
+                        &display_text,
+                        Color::WHITE,
+                        input_rect,
+                    );
+                }
+            } else {
+                // Renderiza apenas o texto sem o cursor
+                render_text(
+                    &mut canvas_buttons,
+                    &font_small,
+                    &input_text,
+                    Color::WHITE,
+                    input_rect,
+                );
+            }
+        } else if input_text.is_empty() {
+            // Renderiza o placeholder se o campo não estiver focado e estiver vazio
             render_text(
                 &mut canvas_buttons,
                 &fonte_large,
@@ -635,6 +683,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 input_rect,
             );
         } else {
+            // Renderiza o texto sem o cursor
             render_text(
                 &mut canvas_buttons,
                 &font_small,
@@ -669,7 +718,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Calcula e renderiza o FPS, se configurado
         frame_count += 1;
-        let now = Instant::now();
         if now.duration_since(last_fps_update).as_secs() >= 1 {
             fps = frame_count as f64 / now.duration_since(last_fps_update).as_secs_f64();
             frame_count = 0;
@@ -677,7 +725,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         if config.debug.mostrar_timer == true {
-            print!("{}", timer_text); // Usin;g println! for automatic newline and flush
+            print!("{}", timer_text); // Using println! for automatic newline and flush
         }
 
         if config.debug.mostrar_qps == true {
