@@ -21,6 +21,15 @@ tempo_texto7 = "02:00"
 tempo_texto8 = "20:00"
 tempo_texto9 = "00:00"
 
+[cores]
+cor_background = [9, 61, 83]
+cor_botoes = [255, 255, 255]
+cor_vermelho = [100, 0, 0]
+cor_verde = [0, 100, 0]
+cor_azul = [0, 0, 100]
+cor_texto = [0, 0, 0]
+
+
 [creditos]
 credito_texto = "Regressiva eleições TV TEM - Gabriel Oliveira"
 mostrar_creditos = true

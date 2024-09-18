@@ -1,105 +1,18 @@
+#![windows_subsystem = "windows"]
+
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::mouse::MouseButton;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use sdl2::ttf::Font;
-use serde_derive::Deserialize;
-use std::fs;
 use std::io::{self, Write};
 use std::time::{Duration, Instant};
-use toml;
 
-// Estrutura principal de configuração
-#[derive(Debug, Deserialize)]
-struct RegressivaConfig {
-    #[serde(rename = "tempo")]
-    tempo: TempoConfig,
 
-    #[serde(rename = "tempo_texto")]
-    tempo_texto: TempoTextoConfig,
+mod config_loader;
+use config_loader::RegressivaConfig;
 
-    #[serde(rename = "creditos")]
-    creditos: CreditosConfig,
-
-    #[serde(rename = "botoes")]
-    botoes: BotoesConfig,
-
-    #[serde(rename = "debug")]
-    debug: DebugConfig,
-
-    #[serde(rename = "fontes")]
-    fontes: FontesConfig,
-
-    #[serde(rename = "boas_vindas")]
-    boas_vindas: BoasVindasConfig,
-}
-
-#[derive(Debug, Deserialize)]
-struct BoasVindasConfig {
-    mostrar_boas_vindas: bool,
-}
-
-// Configuração das fontes
-#[derive(Debug, Deserialize)]
-struct FontesConfig {
-    fonte: String,
-    fonte_gigante: u16,
-    fonte_media: u16,
-    fonte_grande: u16,
-    fonte_pequena: u16,
-}
-
-// Configuração dos tempos
-#[derive(Debug, Deserialize)]
-struct TempoConfig {
-    tempo1: u64,
-    tempo2: u64,
-    tempo3: u64,
-    tempo4: u64,
-    tempo5: u64,
-    tempo6: u64,
-    tempo7: u64,
-    tempo8: u64,
-    tempo9: u64,
-    tempo_reset: u64,
-}
-
-// Configuração dos textos dos tempos
-#[derive(Debug, Deserialize)]
-struct TempoTextoConfig {
-    tempo_texto1: String,
-    tempo_texto2: String,
-    tempo_texto3: String,
-    tempo_texto4: String,
-    tempo_texto5: String,
-    tempo_texto6: String,
-    tempo_texto7: String,
-    tempo_texto8: String,
-    tempo_texto9: String,
-}
-
-// Configuração dos créditos
-#[derive(Debug, Deserialize)]
-struct CreditosConfig {
-    credito_texto: String,
-    mostrar_creditos: bool,
-}
-
-// Configuração dos botões
-#[derive(Debug, Deserialize)]
-struct BotoesConfig {
-    botao_reset: bool,
-    botao_iniciar: bool,
-    botao_pausar: bool,
-}
-
-// Configuração de debug
-#[derive(Debug, Deserialize)]
-struct DebugConfig {
-    mostrar_qps: bool,
-    mostrar_timer: bool,
-}
 
 // Função para renderizar texto no canvas
 fn render_text<'a>(
@@ -132,6 +45,7 @@ fn render_text<'a>(
     canvas.copy(&texture, None, Some(centered_rect)).unwrap();
 }
 
+
 // Função para lidar com cliques do mouse
 fn handle_mouse_click(
     x: i32,
@@ -142,27 +56,28 @@ fn handle_mouse_click(
     countdown_duration: &mut Duration,
     start_time: &mut Instant,
 ) {
-    if buttons.start_button.contains_point((x, y)) && config.botoes.botao_iniciar {
+    if buttons.start_button.contains_point((x, y)) && config.botoes.mostrar_botao_iniciar() {
         *is_running = true;
         *start_time = Instant::now();
-    } else if buttons.pause_button.contains_point((x, y)) && config.botoes.botao_pausar {
+    } else if buttons.pause_button.contains_point((x, y)) && config.botoes.mostrar_botao_pausar() {
         *is_running = false;
-    } else if buttons.reset_button.contains_point((x, y)) && config.botoes.botao_reset {
+    } else if buttons.reset_button.contains_point((x, y)) && config.botoes.mostrar_botao_reset() {
         *is_running = false;
-        *countdown_duration = Duration::new(config.tempo.tempo_reset, 0);
+        *countdown_duration = Duration::new(config.tempo.get_tempo_reset(), 0);
     } else if buttons.close_button.contains_point((x, y)) {
+
         std::process::exit(0);
     } else {
         let button_durations = [
-            (buttons.botao_1, config.tempo.tempo1),
-            (buttons.botao_2, config.tempo.tempo2),
-            (buttons.botao_3, config.tempo.tempo3),
-            (buttons.botao_4, config.tempo.tempo4),
-            (buttons.botao_5, config.tempo.tempo5),
-            (buttons.botao_6, config.tempo.tempo6),
-            (buttons.botao_7, config.tempo.tempo7),
-            (buttons.botao_8, config.tempo.tempo8),
-            (buttons.botao_9, config.tempo.tempo9),
+            (buttons.botao_1, config.tempo.get_tempo(1)),
+            (buttons.botao_2, config.tempo.get_tempo(2)),
+            (buttons.botao_3, config.tempo.get_tempo(3)),
+            (buttons.botao_4, config.tempo.get_tempo(4)),
+            (buttons.botao_5, config.tempo.get_tempo(5)),
+            (buttons.botao_6, config.tempo.get_tempo(6)),
+            (buttons.botao_7, config.tempo.get_tempo(7)),
+            (buttons.botao_8, config.tempo.get_tempo(8)),
+            (buttons.botao_9, config.tempo.get_tempo(9)),
         ];
 
         for (button, duration) in button_durations.iter() {
@@ -243,6 +158,12 @@ fn boas_vindas() {
     [tempo_texto] # Rótulos para os botões
     - tempo_texto1 a tempo_texto9: Defina o texto de exibição para cada botão.
 
+    [cores] # Configurações de cores
+    - cor_background: Defina a cor de fundo (RGB).
+    - cor_botoes: Defina a cor dos botões (RGB).
+    - cor_vermelho, cor_verde, cor_azul: Defina cores adicionais (RGB).
+    - cor_texto: Defina a cor do texto (RGB).
+
     [creditos] # Créditos do programa
     - credito_texto: Defina o texto de crédito.
     - mostrar_creditos: Mostrar ou ocultar créditos (verdadeiro/falso).
@@ -283,23 +204,22 @@ fn update_countdown(
 ) {
     if *is_running {
         let elapsed = start_time.elapsed();
-            if *countdown_duration > elapsed {
-                *countdown_duration -= elapsed;
-            } else {
-                *countdown_duration = Duration::new(0, 0);
-                *is_running = false;
-            }
-        } 
-        *start_time = Instant::now();
+        if *countdown_duration > elapsed {
+            *countdown_duration -= elapsed;
+        } else {
+            *countdown_duration = Duration::new(0, 0);
+            *is_running = false;
+        }
     }
-
+    *start_time = Instant::now();
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Carrega a configuração do arquivo TOML
-    let config_str = fs::read_to_string("Config.toml")?;
-    let config: RegressivaConfig = toml::de::from_str(&config_str)?;
 
-    if config.boas_vindas.mostrar_boas_vindas {
+    let config = config_loader::RegressivaConfig::load_config()?;
+
+    
+    if config.boas_vindas.mostrar_boas_vindas() {
         boas_vindas();
     }
     // Inicializa o SDL e seus subsistemas
@@ -323,37 +243,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .position_centered()
         .borderless()
         .build()?;
-
     let mut canvas_buttons = window_buttons.into_canvas().build()?;
-    let custom_background_color = Color::RGB(9, 61, 83);
-    let custom_red_color = Color::RGBA(100, 0, 0, 150);
-    let custom_green_color = Color::RGBA(0, 100, 0, 150);
-    let custom_blue_color = Color::RGBA(0, 0, 100, 150);
+    let custom_background_color = config.cores.get_background_color();
+    let custom_botao_color = config.cores.get_button_color();
+    let custom_red_color = config.cores.get_red_color();
+    let custom_green_color = config.cores.get_green_color();
+    let custom_blue_color = config.cores.get_blue_color();
     canvas_buttons.set_draw_color(custom_background_color);
 
     // Carrega as fontes
     let fonte_gigantic = ttf_context
         .load_font(
-            "./fonts/".to_owned() + &config.fontes.fonte,
-            config.fontes.fonte_gigante,
+            "./fonts/".to_owned() + &config.fontes.get_fonte(),
+            config.fontes.get_fonte_gigante(),
         )
         .map_err(|e| format!("Failed to load font: {:?}", e))?;
     let font_medium = ttf_context
         .load_font(
-            "./fonts/".to_owned() + &config.fontes.fonte,
-            config.fontes.fonte_media,
+            "./fonts/".to_owned() + &config.fontes.get_fonte(),
+            config.fontes.get_fonte_media(),
         )
         .map_err(|e| format!("Failed to load font: {:?}", e))?;
     let fonte_large = ttf_context
         .load_font(
-            "./fonts/".to_owned() + &config.fontes.fonte,
-            config.fontes.fonte_grande,
+            "./fonts/".to_owned() + &config.fontes.get_fonte(),
+            config.fontes.get_fonte_grande(),
         )
         .map_err(|e| format!("Failed to load font: {:?}", e))?;
     let font_small = ttf_context
         .load_font(
-            "./fonts/".to_owned() + &config.fontes.fonte,
-            config.fontes.fonte_pequena,
+            "./fonts/".to_owned() + &config.fontes.get_fonte(),
+            config.fontes.get_fonte_pequena(),
         )
         .map_err(|e| format!("Failed to load font: {:?}", e))?;
 
@@ -460,7 +380,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         to_u32(50.0 * 1.44),
     );
 
-
     let mut event_pump = sdl_context.event_pump()?;
 
     // Variáveis adicionadas antes do loop
@@ -478,7 +397,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. } => break 'running,
-                Event::MouseButtonDown { x, y, mouse_btn, .. } => {
+                Event::MouseButtonDown {
+                    x, y, mouse_btn, ..
+                } => {
                     if mouse_btn == MouseButton::Left {
                         handle_mouse_click(
                             x,
@@ -534,11 +455,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         // Atualiza a contagem regressiva
-        update_countdown(
-            &mut start_time,
-            &mut countdown_duration,
-            &mut is_running,
-        );
+        update_countdown(&mut start_time, &mut countdown_duration, &mut is_running);
 
         // Calcula o tempo restante
         let remaining_secs = countdown_duration.as_secs();
@@ -583,7 +500,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         canvas_buttons.clear();
 
         // Renderiza o botão de iniciar
-        if config.botoes.botao_iniciar == true {
+        if config.botoes.mostrar_botao_iniciar() == true {
             canvas_buttons.set_draw_color(custom_green_color);
             canvas_buttons.fill_rect(buttons.start_button)?;
             render_text(
@@ -596,7 +513,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         // Renderiza o botão de pausar
-        if config.botoes.botao_pausar == true {
+        if config.botoes.mostrar_botao_pausar() == true {
             canvas_buttons.set_draw_color(custom_blue_color);
             canvas_buttons.fill_rect(buttons.pause_button)?;
             render_text(
@@ -609,7 +526,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         // Renderiza o botão de reset
-        if config.botoes.botao_reset {
+        if config.botoes.mostrar_botao_reset() {
             canvas_buttons.set_draw_color(custom_red_color);
             canvas_buttons.fill_rect(buttons.reset_button)?;
             render_text(
@@ -634,25 +551,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Renderiza os botões de tempo
         let button_texts = [
-            (buttons.botao_7, &config.tempo_texto.tempo_texto7),
-            (buttons.botao_8, &config.tempo_texto.tempo_texto8),
-            (buttons.botao_9, &config.tempo_texto.tempo_texto9),
-            (buttons.botao_1, &config.tempo_texto.tempo_texto1),
-            (buttons.botao_2, &config.tempo_texto.tempo_texto2),
-            (buttons.botao_3, &config.tempo_texto.tempo_texto3),
-            (buttons.botao_4, &config.tempo_texto.tempo_texto4),
-            (buttons.botao_5, &config.tempo_texto.tempo_texto5),
-            (buttons.botao_6, &config.tempo_texto.tempo_texto6),
+            (buttons.botao_1, &config.tempo_texto.get_tempo_texto(1)),
+            (buttons.botao_2, &config.tempo_texto.get_tempo_texto(2)),
+            (buttons.botao_3, &config.tempo_texto.get_tempo_texto(3)),
+            (buttons.botao_4, &config.tempo_texto.get_tempo_texto(4)),
+            (buttons.botao_5, &config.tempo_texto.get_tempo_texto(5)),
+            (buttons.botao_6, &config.tempo_texto.get_tempo_texto(6)),
+            (buttons.botao_7, &config.tempo_texto.get_tempo_texto(7)),
+            (buttons.botao_8, &config.tempo_texto.get_tempo_texto(8)),
+            (buttons.botao_9, &config.tempo_texto.get_tempo_texto(9)),
         ];
 
         for (button, text) in button_texts.iter() {
-            canvas_buttons.set_draw_color(Color::WHITE);
+            canvas_buttons.set_draw_color(custom_botao_color);
             canvas_buttons.fill_rect(*button)?;
             render_text(
                 &mut canvas_buttons,
                 &font_small,
                 text,
-                Color::BLACK,
+                config.cores.get_text_color(),
                 *button,
             );
         }
@@ -722,8 +639,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
 
         // Renderiza os créditos, se configurado
-        if config.creditos.mostrar_creditos == true {
-            let tips_text = &config.creditos.credito_texto;
+        if config.creditos.mostrar_creditos() == true {
+            let tips_text = &config.creditos.get_credito_texto();
             render_text(
                 &mut canvas_buttons,
                 &font_medium,
@@ -741,11 +658,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             last_fps_update = now;
         }
 
-        if config.debug.mostrar_timer == true {
+        if config.debug.mostrar_timer() == true {
             print!("{}", timer_text); // Using println! for automatic newline and flush
         }
 
-        if config.debug.mostrar_qps == true {
+        if config.debug.mostrar_qps() == true {
             let fps_text = format!("QPS: {:.2}", fps);
             print!(" | {}", fps_text); // Using println! for automatic newline and flush
             render_text(
