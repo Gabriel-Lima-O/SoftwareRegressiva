@@ -48,9 +48,9 @@ mostrar_timer = false
 [fontes] # Fontes para o programa
 fonte = "GlobotipoVariable-VF.ttf"
 fonte_gigante = 256
-fonte_media = 22
+fonte_media = 36
 fonte_grande = 44
-fonte_pequena = 36
+fonte_pequena = 16
 
 [boas_vindas]
 mostrar_boas_vindas = true

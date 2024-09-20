@@ -251,31 +251,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let custom_blue_color = config.cores.get_blue_color();
     canvas_buttons.set_draw_color(custom_background_color);
 
+    // fallback para fonte padrao do windows
+    fn load_font_with_fallback<'a>(
+        ttf_context: &'a sdl2::ttf::Sdl2TtfContext,
+        font_path: &'a str,
+        font_size: u16,
+    ) -> Result<sdl2::ttf::Font<'a, 'a>, String> {
+        ttf_context.load_font(font_path, font_size).or_else(|_| {
+            // Fallback to a default Windows font
+            ttf_context.load_font("C:\\Windows\\Fonts\\arial.ttf", font_size)
+                .map_err(|e| format!("Failed to load fallback font: {:?}", e))
+        })
+    }
+
     // Carrega as fontes
-    let fonte_gigantic = ttf_context
-        .load_font(
-            "./fonts/".to_owned() + &config.fontes.get_fonte(),
-            config.fontes.get_fonte_gigante(),
-        )
-        .map_err(|e| format!("Failed to load font: {:?}", e))?;
-    let font_medium = ttf_context
-        .load_font(
-            "./fonts/".to_owned() + &config.fontes.get_fonte(),
-            config.fontes.get_fonte_media(),
-        )
-        .map_err(|e| format!("Failed to load font: {:?}", e))?;
-    let fonte_large = ttf_context
-        .load_font(
-            "./fonts/".to_owned() + &config.fontes.get_fonte(),
-            config.fontes.get_fonte_grande(),
-        )
-        .map_err(|e| format!("Failed to load font: {:?}", e))?;
-    let font_small = ttf_context
-        .load_font(
-            "./fonts/".to_owned() + &config.fontes.get_fonte(),
-            config.fontes.get_fonte_pequena(),
-        )
-        .map_err(|e| format!("Failed to load font: {:?}", e))?;
+let font_path = "./fonts/".to_owned() + &config.fontes.get_fonte();
+let fonte_gigantic = load_font_with_fallback(&ttf_context, &font_path, config.fontes.get_fonte_gigante())?;
+let font_medium = load_font_with_fallback(&ttf_context, &font_path, config.fontes.get_fonte_media())?;
+let fonte_large = load_font_with_fallback(&ttf_context, &font_path, config.fontes.get_fonte_grande())?;
+let font_small = load_font_with_fallback(&ttf_context, &font_path, config.fontes.get_fonte_pequena())?;
+
 
     // Inicializa variáveis de controle
     let mut start_time = Instant::now();
@@ -567,7 +562,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             canvas_buttons.fill_rect(*button)?;
             render_text(
                 &mut canvas_buttons,
-                &font_small,
+                &font_medium,
                 text,
                 config.cores.get_text_color(),
                 *button,
@@ -581,7 +576,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     // Renderiza apenas o cursor
                     render_text(
                         &mut canvas_buttons,
-                        &font_small,
+                        &font_medium,
                         "|",
                         Color::WHITE,
                         input_rect,
@@ -591,7 +586,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let display_text = format!("{}|", input_text);
                     render_text(
                         &mut canvas_buttons,
-                        &font_small,
+                        &font_medium,
                         &display_text,
                         Color::WHITE,
                         input_rect,
@@ -601,7 +596,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // Renderiza apenas o texto sem o cursor
                 render_text(
                     &mut canvas_buttons,
-                    &font_small,
+                    &font_medium,
                     &input_text,
                     Color::WHITE,
                     input_rect,
@@ -643,10 +638,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let tips_text = &config.creditos.get_credito_texto();
             render_text(
                 &mut canvas_buttons,
-                &font_medium,
+                &font_small,
                 tips_text,
                 Color::WHITE,
-                Rect::new(85, 680, 300, 30),
+                Rect::new(160, 660, 960, 72),
+                
             );
         }
 
