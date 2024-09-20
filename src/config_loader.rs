@@ -194,6 +194,7 @@ pub struct TempoConfig {
     tempo7: u64,
     tempo8: u64,
     tempo9: u64,
+    tempo_alerta_regressiva: u64,
     tempo_reset: u64,
 }
 
@@ -218,6 +219,11 @@ impl TempoConfig {
     pub fn get_tempo_reset(&self) -> u64 {
         self.tempo_reset
     }
+
+    /// Retorna o tempo de alerta regressiva
+    pub fn get_tempo_alerta_regressiva(&self) -> u64 {
+        self.tempo_alerta_regressiva
+    }
 }
 
 impl Default for TempoConfig {
@@ -232,6 +238,7 @@ impl Default for TempoConfig {
             tempo7: 90,
             tempo8: 105,
             tempo9: 120,
+            tempo_alerta_regressiva: 15,
             tempo_reset: 0,
         }
     }

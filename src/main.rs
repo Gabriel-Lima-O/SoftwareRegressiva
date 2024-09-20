@@ -458,7 +458,7 @@ let font_small = load_font_with_fallback(&ttf_context, &font_path, config.fontes
         let seconds = remaining_secs % 60;
 
         // Define a cor do timer
-        let timer_color = if remaining_secs <= 10 && remaining_secs > 0 {
+        let timer_color = if remaining_secs <= config.tempo.get_tempo_alerta_regressiva() && remaining_secs > 0 {
             if seconds % 2 == 0 {
                 Color::RED
             } else {
