@@ -223,16 +223,16 @@ impl TempoConfig {
 impl Default for TempoConfig {
     fn default() -> Self {
         TempoConfig {
-            tempo1: 30,
-            tempo2: 60,
-            tempo3: 75,
-            tempo4: 120,
-            tempo5: 1200,
-            tempo6: 0,
-            tempo7: 120,
-            tempo8: 1200,
-            tempo9: 0,
-            tempo_reset: 14,
+            tempo1: 0,
+            tempo2: 15,
+            tempo3: 30,
+            tempo4: 45,
+            tempo5: 60,
+            tempo6: 75,
+            tempo7: 90,
+            tempo8: 105,
+            tempo9: 120,
+            tempo_reset: 0,
         }
     }
 }
@@ -272,15 +272,15 @@ impl TempoTextoConfig {
 impl Default for TempoTextoConfig {
     fn default() -> Self {
         TempoTextoConfig {
-            tempo_texto1: "00:30".to_string(),
-            tempo_texto2: "01:00".to_string(),
-            tempo_texto3: "01:15".to_string(),
-            tempo_texto4: "02:00".to_string(),
-            tempo_texto5: "20:00".to_string(),
-            tempo_texto6: "00:00".to_string(),
-            tempo_texto7: "02:00".to_string(),
-            tempo_texto8: "20:00".to_string(),
-            tempo_texto9: "00:00".to_string(),
+            tempo_texto1: "00:00".to_string(),
+            tempo_texto2: "00:15".to_string(),
+            tempo_texto3: "00:30".to_string(),
+            tempo_texto4: "00:45".to_string(),
+            tempo_texto5: "01:00".to_string(),
+            tempo_texto6: "01:15".to_string(),
+            tempo_texto7: "01:30".to_string(),
+            tempo_texto8: "01:45".to_string(),
+            tempo_texto9: "02:00".to_string(),
         }
     }
 }
